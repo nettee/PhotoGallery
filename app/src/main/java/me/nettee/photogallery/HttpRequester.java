@@ -2,14 +2,15 @@ package me.nettee.photogallery;
 
 import android.graphics.Bitmap;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 public abstract class HttpRequester {
 
-    public abstract Bitmap getBitmap(String urlSpec) throws IOException;
+    public interface ResponseHandler<Result> {
+        void onSuccess(Result result);
+        void onFailure(String errorText);
+        void onException(Throwable throwable);
+    }
 
-    public abstract String getReturnText(String urlSpec) throws IOException;
+    public abstract void requestForText(String urlSpec, ResponseHandler<String> responseHandler);
+    public abstract void requestForBitmap(String urlSpec, ResponseHandler<Bitmap> responseHandler);
 
 }

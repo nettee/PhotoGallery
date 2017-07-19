@@ -8,7 +8,6 @@ import com.loopj.android.http.RequestParams;
 import com.loopj.android.http.TextHttpResponseHandler;
 
 import java.io.IOException;
-import java.util.Map;
 
 import cz.msebera.android.httpclient.Header;
 

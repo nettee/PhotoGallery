@@ -7,7 +7,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,27 +34,37 @@ public class PixabayFetcher {
 
     public List<GalleryItem> fetchItems() {
 
-        List<GalleryItem> items = new ArrayList<>();
+        final List<GalleryItem> items = new ArrayList<>();
 
-        try {
-            Uri.Builder uriBuiler = Uri.parse(BASE_URL)
-                    .buildUpon();
-            for (Map.Entry<String, String> e : PARAMS.entrySet()) {
-                uriBuiler.appendQueryParameter(e.getKey(), e.getValue());
-            }
-            Uri uri = uriBuiler.build();
-
-            String jsonString = mHttpRequester.getReturnText(uri.toString());
-            Log.i(TAG, "received JSON: " + jsonString.substring(0, 50));
-
-            JSONObject jsonBody = new JSONObject(jsonString);
-            parseItems(items, jsonBody);
-
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to fetch items", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "Failed to parse JSON", e);
+        Uri.Builder uriBuiler = Uri.parse(BASE_URL)
+                .buildUpon();
+        for (Map.Entry<String, String> e : PARAMS.entrySet()) {
+            uriBuiler.appendQueryParameter(e.getKey(), e.getValue());
         }
+        Uri uri = uriBuiler.build();
+
+        mHttpRequester.requestForText(uri.toString(), new HttpRequester.ResponseHandler<String>() {
+            @Override
+            public void onSuccess(String jsonString) {
+                Log.i(TAG, String.format("Received JSON: %s...", jsonString.substring(0, 50)));
+                try {
+                    JSONObject jsonObject = new JSONObject(jsonString);
+                    parseItems(items, jsonObject);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Failed to parse JSON", e);
+                }
+            }
+
+            @Override
+            public void onFailure(String errorText) {
+                Log.i(TAG, "Failed to connect to Pixabay: " + errorText);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                Log.e(TAG, "Failed to fetch items", throwable);
+            }
+        });
 
         return items;
     }

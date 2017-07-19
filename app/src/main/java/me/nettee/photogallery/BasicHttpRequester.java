@@ -2,9 +2,6 @@ package me.nettee.photogallery;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.nfc.Tag;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,18 +9,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Map;
 
 public class BasicHttpRequester extends HttpRequester {
 
     private static final String TAG = "BasicHttpRequester";
 
-    private static final Decoder<Bitmap> mBitmapDecoder = new Decoder<Bitmap>() {
-        @Override
-        public Bitmap decode(InputStream in) {
-            return BitmapFactory.decodeStream(in);
-        }
-    };
+    private interface Decoder<Out> {
+        Out decode(InputStream in) throws IOException;
+    }
 
     private static final Decoder<String> mReturnTextDecoder = new Decoder<String>() {
         @Override
@@ -38,42 +31,43 @@ public class BasicHttpRequester extends HttpRequester {
         }
     };
 
-    private interface Decoder<Out> {
-        Out decode(InputStream in) throws IOException;
-    }
-
-    private <Out> Out getAndDecode(String urlSpec, Decoder<Out> decoder) throws IOException {
-
-        URL url = new URL(urlSpec);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-        // Open InputStream to connection
-        connection.connect();
-
-        int responseCode = connection.getResponseCode();
-        if (responseCode >= 400) {
-            InputStream errorStream = connection.getErrorStream();
-            String errorString = mReturnTextDecoder.decode(errorStream);
-            Log.e(TAG, "Error HTTP response status: " + errorString);
-            return null;
+    private static final Decoder<Bitmap> mBitmapDecoder = new Decoder<Bitmap>() {
+        @Override
+        public Bitmap decode(InputStream in) {
+            return BitmapFactory.decodeStream(in);
         }
+    };
 
-        InputStream in = connection.getInputStream();
+    private <Out> void request(String urlSpec, Decoder<Out> decoder, ResponseHandler<Out> responseHandler){
 
-        // Download and decode
-        Out out = decoder.decode(in);
-        return out;
+        try {
+            URL url = new URL(urlSpec);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            connection.connect();
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode >= 400) {
+                InputStream errorStream = connection.getErrorStream();
+                String errorText = mReturnTextDecoder.decode(errorStream);
+                responseHandler.onFailure(errorText);
+            } else {
+                InputStream in = connection.getInputStream();
+                Out out = decoder.decode(in);
+                responseHandler.onSuccess(out);
+            }
+        } catch (IOException e) {
+            responseHandler.onException(e);
+        }
     }
 
     @Override
-    public Bitmap getBitmap(String urlSpec) throws IOException {
-        return getAndDecode(urlSpec, mBitmapDecoder);
+    public void requestForText(String urlSpec, ResponseHandler<String> responseHandler) {
+        request(urlSpec, mReturnTextDecoder, responseHandler);
     }
 
     @Override
-    public String getReturnText(String urlSpec) throws IOException {
-
-
-        return getAndDecode(urlSpec, mReturnTextDecoder);
+    public void requestForBitmap(String urlSpec, ResponseHandler<Bitmap> responseHandler) {
+        request(urlSpec, mBitmapDecoder, responseHandler);
     }
 }

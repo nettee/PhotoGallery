@@ -6,7 +6,6 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -71,30 +70,39 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     }
 
     private void handleRequest(final T target) {
-        try {
             final String url = mRequestMap.get(target);
 
             if (url == null) {
                 return;
             }
 
-            final Bitmap bitmap = new BasicHttpRequester().getBitmap(url);
-            Log.i(TAG, "Bitmap created");
-
-            mResponseHandler.post(new Runnable() {
+            new BasicHttpRequester().requestForBitmap(url, new HttpRequester.ResponseHandler<Bitmap>() {
                 @Override
-                public void run() {
-                    if (mRequestMap.get(target) != url || mHasQuit) {
-                        return;
-                    }
+                public void onSuccess(final Bitmap bitmap) {
+                    Log.i(TAG, "Bitmap created");
 
-                    mRequestMap.remove(target);
-                    mThumbnailDownloadListener.onThumbnailDownloaded(target, bitmap);
+                    mResponseHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mRequestMap.get(target) != url || mHasQuit) {
+                                return;
+                            }
+
+                            mRequestMap.remove(target);
+                            mThumbnailDownloadListener.onThumbnailDownloaded(target, bitmap);
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(String errorText) {
+                    Log.i(TAG, "Failed to download photo: " + errorText);
+                }
+
+                @Override
+                public void onException(Throwable throwable) {
+                    Log.i(TAG, "Error when downloading photo", throwable);
                 }
             });
-
-        } catch (IOException e) {
-            Log.e(TAG, "Error downloading image", e);
-        }
     }
 }
