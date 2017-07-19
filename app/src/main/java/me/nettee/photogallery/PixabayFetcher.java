@@ -29,7 +29,8 @@ public class PixabayFetcher {
     private HttpRequester mHttpRequester;
 
     public PixabayFetcher() {
-        mHttpRequester = new BasicHttpRequester();
+//        mHttpRequester = new BasicHttpRequester();
+        mHttpRequester = new AsyncHttpRequester();
     }
 
     public List<GalleryItem> fetchItems() {
