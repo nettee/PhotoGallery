@@ -1,17 +1,19 @@
 package me.nettee.photogallery;
 
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class BasicHttpRequester extends HttpRequester {
+public class BasicHttpRequester {
 
     private static final String TAG = "BasicHttpRequester";
 
-    private <Out> void request(String urlSpec, Decoder<InputStream, Out> decoder, ResponseHandler<Out> responseHandler){
+    private <Out> void request(String urlSpec, Decoder<InputStream, Out> decoder, HttpRequester.ResponseHandler<Out> responseHandler){
 
         try {
             URL url = new URL(urlSpec);
@@ -34,13 +36,12 @@ public class BasicHttpRequester extends HttpRequester {
         }
     }
 
-    @Override
-    public void requestForText(String urlSpec, ResponseHandler<String> responseHandler) {
+    public void requestForText(String urlSpec, HttpRequester.ResponseHandler<String> responseHandler) {
         request(urlSpec, new Decoder.StreamTextDecoder(), responseHandler);
     }
 
-    @Override
-    public void requestForBitmap(String urlSpec, ResponseHandler<Bitmap> responseHandler) {
+    public void requestForBitmap(String urlSpec, HttpRequester.ResponseHandler<Bitmap> responseHandler) {
         request(urlSpec, new Decoder.StreamBitmapDecoder(), responseHandler);
     }
+
 }

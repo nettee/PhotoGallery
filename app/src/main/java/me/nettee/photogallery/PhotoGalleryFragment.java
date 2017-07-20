@@ -36,7 +36,13 @@ public class PhotoGalleryFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        new FetchItemTask().execute();
+        new ItemFetcher().fetch(new ItemFetcher.FetchResultListener() {
+            @Override
+            public void onResult(List<GalleryItem> galleryItems) {
+                mItems = galleryItems;
+                setupAdapter();
+            }
+        });
 
         Handler responseHandler = new Handler();
         mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
@@ -123,22 +129,6 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         public int getItemCount() {
             return mGalleryItems.size();
-        }
-    }
-
-    private class FetchItemTask extends AsyncTask<Void, Void, List<GalleryItem>> {
-
-        @Override
-        protected List<GalleryItem> doInBackground(Void... voids) {
-            PixabayFetcher fetcher = new PixabayFetcher();
-            List<GalleryItem> galleryItems = fetcher.fetchItems();
-            return galleryItems;
-        }
-
-        @Override
-        protected void onPostExecute(List<GalleryItem> galleryItems) {
-            mItems = galleryItems;
-            setupAdapter();
         }
     }
 }
