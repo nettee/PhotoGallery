@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PixabayStrategy {
+public class PixabaySource implements PhotoSource {
 
     private static final String API_KEY = "5928733-3d080c3228c8c1a1d1ec177ae";
     private static final String BASE_URL = "https://pixabay.com/api/";
@@ -22,6 +22,7 @@ public class PixabayStrategy {
         }
     };
 
+    @Override
     public String getUrl() {
         Uri.Builder uriBuiler = Uri.parse(BASE_URL)
                 .buildUpon();
@@ -32,6 +33,7 @@ public class PixabayStrategy {
         return uri.toString();
     }
 
+    @Override
     public void parseItems(List<GalleryItem> items, String jsonString) throws JSONException {
         JSONObject jsonObject = new JSONObject(jsonString);
         JSONArray hitsJsonArray = jsonObject.getJSONArray("hits");

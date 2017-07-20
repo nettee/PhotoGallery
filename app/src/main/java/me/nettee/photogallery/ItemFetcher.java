@@ -3,43 +3,48 @@ package me.nettee.photogallery;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-
 import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import cz.msebera.android.httpclient.Header;
-
 public class ItemFetcher {
 
+    public interface FetchResultListener {
+        void onResult(List<GalleryItem> galleryItems);
+    }
+
     private static final String TAG = "ItemFetcher";
-    private PixabayStrategy mPixabayStrategy;
-    private BasicHttpRequester mBasicHttpRequester;
-    public ItemFetcher() {
-        mPixabayStrategy = new PixabayStrategy();
-        mBasicHttpRequester = new BasicHttpRequester();
+
+    private PhotoSource mSource;
+    private HttpRequester mHttpRequester;
+
+    public void setSource(PhotoSource source) {
+        mSource = source;
+    }
+
+    public void setHttpRequester(HttpRequester httpRequester) {
+        mHttpRequester = httpRequester;
     }
 
     public void fetch(final FetchResultListener listener) {
-        fetchSync(listener);
-//        fetchAsync(listener);
+        if (mHttpRequester.isAsync()) {
+            fetchSync(listener);
+        } else {
+            fetchAsync(listener);
+        }
     }
 
     private void fetchSync(final FetchResultListener listener) {
-        AsyncHttpClient client = new AsyncHttpClient();
-        client.get(mPixabayStrategy.getUrl(), new AsyncHttpResponseHandler() {
 
-            final List<GalleryItem> items = new ArrayList<>();
+        final List<GalleryItem> items = new ArrayList<>();
 
+        mHttpRequester.requestForText(mSource.getUrl(), new HttpRequester.ResponseHandler<String>() {
             @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+            public void onSuccess(String jsonString) {
+                Log.i(TAG, String.format("Received response: %s...", jsonString.substring(0, 50)));
                 try {
-                    String jsonString = new String(responseBody);
-                    Log.i(TAG, String.format("Received response: %s...", jsonString.substring(0, 50)));
-                    mPixabayStrategy.parseItems(items, jsonString);
+                    mSource.parseItems(items, jsonString);
                     listener.onResult(items);
                 } catch (JSONException e) {
                     Log.e(TAG, "Failed to parse JSON", e);
@@ -47,8 +52,13 @@ public class ItemFetcher {
             }
 
             @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                Log.e(TAG, "Failed to fetch items", error);
+            public void onFailure(String errorText) {
+                Log.i(TAG, "Failed to connect to server: " + errorText);
+            }
+
+            @Override
+            public void onException(Throwable throwable) {
+                Log.e(TAG, "Failed to fetch items", throwable);
             }
         });
     }
@@ -60,13 +70,13 @@ public class ItemFetcher {
 
                 final List<GalleryItem> items = new ArrayList<>();
 
-                String urlSpec = mPixabayStrategy.getUrl();
-                mBasicHttpRequester.requestForText(urlSpec, new HttpRequester.ResponseHandler<String>() {
+                String urlSpec = mSource.getUrl();
+                mHttpRequester.requestForText(urlSpec, new HttpRequester.ResponseHandler<String>() {
                     @Override
                     public void onSuccess(String jsonString) {
                         Log.i(TAG, String.format("Received response: %s...", jsonString.substring(0, 50)));
                         try {
-                            mPixabayStrategy.parseItems(items, jsonString);
+                            mSource.parseItems(items, jsonString);
                         } catch (JSONException e) {
                             Log.e(TAG, "Failed to parse JSON", e);
                         }
@@ -90,10 +100,6 @@ public class ItemFetcher {
                 listener.onResult(galleryItems);
             }
         }.execute();
-    }
-
-    public interface FetchResultListener {
-        void onResult(List<GalleryItem> galleryItems);
     }
 
 

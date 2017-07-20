@@ -9,9 +9,14 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class BasicHttpRequester {
+public class BasicHttpRequester extends HttpRequester {
 
     private static final String TAG = "BasicHttpRequester";
+
+    @Override
+    public boolean isAsync() {
+        return false;
+    }
 
     private <Out> void request(String urlSpec, Decoder<InputStream, Out> decoder, HttpRequester.ResponseHandler<Out> responseHandler){
 
@@ -36,10 +41,12 @@ public class BasicHttpRequester {
         }
     }
 
+    @Override
     public void requestForText(String urlSpec, HttpRequester.ResponseHandler<String> responseHandler) {
         request(urlSpec, new Decoder.StreamTextDecoder(), responseHandler);
     }
 
+    @Override
     public void requestForBitmap(String urlSpec, HttpRequester.ResponseHandler<Bitmap> responseHandler) {
         request(urlSpec, new Decoder.StreamBitmapDecoder(), responseHandler);
     }

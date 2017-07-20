@@ -36,7 +36,12 @@ public class PhotoGalleryFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        new ItemFetcher().fetch(new ItemFetcher.FetchResultListener() {
+
+        ItemFetcher itemFetcher = new ItemFetcher();
+        itemFetcher.setSource(new PixabaySource());
+        itemFetcher.setHttpRequester(new BasicHttpRequester());
+//        itemFetcher.setHttpRequester(new AsyncHttpRequester());
+        itemFetcher.fetch(new ItemFetcher.FetchResultListener() {
             @Override
             public void onResult(List<GalleryItem> galleryItems) {
                 mItems = galleryItems;
